@@ -1,0 +1,18 @@
+{
+  "errorMessages": {
+    "incorrectEmail": "Please enter a valid email address",
+    "invalidCredentials": "Incorrect login credentials"
+  },
+  "validationMessages": {
+    "requiredField": "This field is required",
+    "invalidEmail": "Please enter a valid email address",
+    "successCreate": "successfully created",
+    "successUpdate": "successfully updated"
+  },
+  "superBusinessUnits": { "valid": [], "invalid": [], "duplicate": [] },
+  "businessUnits": { "valid": [], "invalid": [], "regions": ["Default"], "externalAffiliations": ["Default"] },
+  "branches": { "valid": [], "invalid": [], "regions": ["Default"], "bankNames": ["Default"] },
+  "vendorCodes": { "valid": [], "invalid": [], "bankNames": ["Default"] },
+  "users": { "valid": [], "invalid": [], "products": ["Default"] },
+  "roles": { "valid": [], "invalid": [], "availablePermissions": ["Read", "Write"] }
+}

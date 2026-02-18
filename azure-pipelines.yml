@@ -1,0 +1,145 @@
+# Generic test automation pipeline template.
+# Update variable group name, notification emails, and project-specific settings for your project.
+
+trigger: none
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - src/**
+      - tests/**
+      - azure-pipelines.yml
+    exclude:
+      - docs/**
+      - README.md
+  autoCancel: true
+
+parameters:
+  - name: testType
+    type: string
+    default: 'sanity'
+    values:
+      - 'sanity'
+      - 'regression'
+
+schedules:
+  - cron: '0 7 * * 1'
+    displayName: Weekly Sanity Tests
+    branches:
+      include:
+        - main
+    always: true
+
+variables:
+  # Replace with your variable group name (e.g. MY_PROJECT_UAT_GROUP)
+  - group: TEST_AUTOMATION_UAT_GROUP
+  - name: runTestType
+    ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
+      ${{ if eq(variables['System.CronSchedule'], '0 7 * * 1') }}:
+        value: 'sanity'
+    ${{ else }}:
+      value: ${{ parameters.testType }}
+
+pool:
+  vmImage: 'windows-latest'
+
+jobs:
+  - job: TestWithSharding
+    displayName: 'Run Playwright Tests with sharding'
+    timeoutInMinutes: 180
+    strategy:
+      matrix:
+        shard1:
+          SHARD_INDEX: 1
+          SHARD_TOTAL: 4
+        shard2:
+          SHARD_INDEX: 2
+          SHARD_TOTAL: 4
+        shard3:
+          SHARD_INDEX: 3
+          SHARD_TOTAL: 4
+        shard4:
+          SHARD_INDEX: 4
+          SHARD_TOTAL: 4
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '23.x'
+        displayName: 'Install Node.js'
+
+      - script: npm ci
+        displayName: 'Install dependencies'
+
+      - script: npx playwright install --with-deps
+        displayName: 'Install Playwright browsers'
+
+      - script: |
+          echo "##vso[task.setvariable variable=CI_PORTAL_BASE_URL]$(PORTAL_BASE_URL)"
+          echo "##vso[task.setvariable variable=CI_API_BASE_URL]$(API_BASE_URL)"
+          echo "##vso[task.setvariable variable=CI_PORTAL_USERNAME]$(PORTAL_USERNAME)"
+          echo "##vso[task.setvariable variable=CI_PORTAL_PASSWORD]$(PORTAL_PASSWORD)"
+        displayName: 'Set environment variables'
+
+      - script: npm run test:ui:uat
+        displayName: 'Run ${{ parameters.testType }} tests with sharding'
+        env:
+          CI: true
+          ENV: uat
+          SHARD_INDEX: $(SHARD_INDEX)
+          SHARD_TOTAL: $(SHARD_TOTAL)
+          ${{ if eq(parameters.testType, 'sanity') }}:
+            PLAYWRIGHT_GREP: '@sanity'
+          ${{ if eq(parameters.testType, 'regression') }}:
+            PLAYWRIGHT_GREP: '@regression'
+          timeoutInMinutes: 160
+        continueOnError: true
+
+      - task: PublishTestResults@2
+        inputs:
+          testResultsFormat: 'VSTest'
+          testResultsFiles: '**.trx'
+          failTaskOnMissingResultsFile: true
+        displayName: 'Publish test results'
+        condition: always()
+
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: 'playwright-report'
+          artifactName: 'playwright-report-shard-$(SHARD_INDEX)'
+          publishLocation: 'pipeline'
+        displayName: 'Publish Playwright report'
+        condition: always()
+
+  - job: SendEmailNotification
+    dependsOn: TestWithSharding
+    condition: always()
+    steps:
+      # Configure your SMTP task and recipient list for your project
+      - ${{ if eq(parameters.testType, 'sanity') }}:
+          - task: EmailReportV2@2
+            inputs:
+              smtpConnectionEndpoint: 'YOUR_SMTP_CONNECTION'
+              sendMailConditionConfig: 'Always'
+              subject: '[{environmentStatus}] {passPercentage} Sanity tests - $(Build.BuildNumber)'
+              toAddress: 'your-team@example.com'
+              groupTestResultsBy: 'run'
+              includeCommits: false
+              maxTestFailuresToShow: '15'
+              includeOthersInTotal: true
+              usePreviousEnvironment: false
+
+      - ${{ if eq(parameters.testType, 'regression') }}:
+          - task: EmailReportV2@2
+            inputs:
+              smtpConnectionEndpoint: 'YOUR_SMTP_CONNECTION'
+              sendMailConditionConfig: 'Always'
+              subject: '[{environmentStatus}] {passPercentage} Regression tests - $(Build.BuildNumber)'
+              toAddress: 'your-team@example.com'
+              groupTestResultsBy: 'run'
+              includeCommits: false
+              maxTestFailuresToShow: '15'
+              includeOthersInTotal: true
+              usePreviousEnvironment: false
