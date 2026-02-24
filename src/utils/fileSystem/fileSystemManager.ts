@@ -249,7 +249,31 @@ export default class FileSystemManager {
     filePath: string,
     options?: Partial<FileOperationOptions>,
   ): Promise<FileOperationResult> {
-    return this.deleteFile(filePath, options);
+    const opts = { ...this.DEFAULT_OPTIONS, ...options };
+    filePath = this.normalizePath(filePath);
+    this.validatePath(filePath, 'filePath');
+
+    try {
+      const exists = await this.doesFileExist(filePath);
+      if (!exists) {
+        logger.debug(`File not found, nothing to delete: ${this.getRelativePath(filePath)}`);
+        return { success: true };
+      }
+
+      await fs.promises.unlink(filePath);
+      logger.debug(`Deleted file: ${this.getRelativePath(filePath)}`);
+      return { success: true };
+    } catch (error) {
+      ErrorHandler.captureError(error, 'deleteFile', `Failed to delete file: ${filePath}`);
+
+      if (opts.throwOnError) {
+        throw error;
+      }
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error)),
+      };
+    }
   }
 
   /**
@@ -259,7 +283,31 @@ export default class FileSystemManager {
     dirPath: string,
     options?: Partial<FileOperationOptions>,
   ): Promise<FileOperationResult> {
-    return this.deleteDirectory(dirPath, options);
+    const opts = { ...this.DEFAULT_OPTIONS, ...options };
+    dirPath = this.normalizePath(dirPath);
+    this.validatePath(dirPath, 'dirPath');
+
+    try {
+      const exists = await this.doesDirectoryExist(dirPath);
+      if (!exists) {
+        logger.debug(`Directory not found, nothing to delete: ${this.getRelativePath(dirPath)}`);
+        return { success: true };
+      }
+
+      await fs.promises.rm(dirPath, { recursive: true, force: true });
+      logger.debug(`Deleted directory: ${this.getRelativePath(dirPath)}`);
+      return { success: true };
+    } catch (error) {
+      ErrorHandler.captureError(error, 'deleteDirectory', `Failed to delete directory: ${dirPath}`);
+
+      if (opts.throwOnError) {
+        throw error;
+      }
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error)),
+      };
+    }
   }
 
   /**

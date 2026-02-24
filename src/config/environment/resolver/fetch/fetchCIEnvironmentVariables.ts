@@ -1,6 +1,5 @@
 import { CIEnvironmentConfig } from '../../../types/config/ci-environment.types';
 import { EnvironmentUtils } from '../environmentUtils';
-import SanitizationConfig from '../../../../utils/sanitization/sanitizationConfig';
 import { Credentials } from '../../../types/auth/credentials.types';
 
 export class FetchCIEnvironmentVariables {
@@ -16,7 +15,7 @@ export class FetchCIEnvironmentVariables {
   private readonly ciEnvironmentVariables: CIEnvironmentConfig = {
     urls: {
       apiBaseUrl: process.env.CI_API_BASE_URL!,
-      portalBaseUrl: process.env.PORTAL_BASE_URL!,
+      portalBaseUrl: process.env.CI_PORTAL_BASE_URL!,
     },
     users: {
       portal: {
@@ -64,12 +63,8 @@ export class FetchCIEnvironmentVariables {
       password: this.ciEnvironmentVariables.users.portal.password,
     });
     return {
-      username: SanitizationConfig.sanitizeString(
-        this.ciEnvironmentVariables.users.portal.username,
-      ),
-      password: SanitizationConfig.sanitizeString(
-        this.ciEnvironmentVariables.users.portal.password,
-      ),
+      username: this.ciEnvironmentVariables.users.portal.username,
+      password: this.ciEnvironmentVariables.users.portal.password,
     };
   }
 

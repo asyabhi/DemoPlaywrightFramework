@@ -52,7 +52,12 @@ export class EnvironmentFileParser {
   ): Promise<void> {
     try {
       const content = lines.join('\n');
-      await FileSystemManager.writeFile(environmentFilePath, content, FileEncoding.UTF8);
+      await FileSystemManager.writeFile(
+        environmentFilePath,
+        content,
+        'environmentFile',
+        FileEncoding.UTF8,
+      );
       logger.debug(`Successfully wrote ${lines.length} lines to ${environmentFilePath}`);
     } catch (error) {
       ErrorHandler.captureError(

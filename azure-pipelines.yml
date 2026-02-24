@@ -67,7 +67,7 @@ jobs:
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '23.x'
+          versionSpec: '22.x'
         displayName: 'Install Node.js'
 
       - script: npm ci
@@ -81,21 +81,21 @@ jobs:
           echo "##vso[task.setvariable variable=CI_API_BASE_URL]$(API_BASE_URL)"
           echo "##vso[task.setvariable variable=CI_PORTAL_USERNAME]$(PORTAL_USERNAME)"
           echo "##vso[task.setvariable variable=CI_PORTAL_PASSWORD]$(PORTAL_PASSWORD)"
+          echo "##vso[task.setvariable variable=CI_DATABASE_AZURE_ENDPOINT]$(AZURE_DB_ENDPOINT)"
+          echo "##vso[task.setvariable variable=CI_DATABASE_SERVER]$(DB_SERVER)"
+          echo "##vso[task.setvariable variable=CI_DATABASE_NAME]$(DATABASE_NAME)"
+          echo "##vso[task.setvariable variable=CI_DATABASE_PORT]$(DB_PORT)"
         displayName: 'Set environment variables'
 
       - script: npm run test:ui:uat
-        displayName: 'Run ${{ parameters.testType }} tests with sharding'
+        displayName: 'Run $(runTestType) tests with sharding'
+        timeoutInMinutes: 160
         env:
           CI: true
           ENV: uat
           SHARD_INDEX: $(SHARD_INDEX)
           SHARD_TOTAL: $(SHARD_TOTAL)
-          ${{ if eq(parameters.testType, 'sanity') }}:
-            PLAYWRIGHT_GREP: '@sanity'
-          ${{ if eq(parameters.testType, 'regression') }}:
-            PLAYWRIGHT_GREP: '@regression'
-          timeoutInMinutes: 160
-        continueOnError: true
+          PLAYWRIGHT_GREP: '@$(runTestType)'
 
       - task: PublishTestResults@2
         inputs:

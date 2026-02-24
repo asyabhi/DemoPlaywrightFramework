@@ -1,10 +1,10 @@
 import EnvironmentDetector from '../detector/detector';
 import { CryptoService } from '../../../cryptography/service/cryptoService';
-import SanitizationConfig from '../../../utils/sanitization/sanitizationConfig';
 import { Credentials } from '../../types/auth/credentials.types';
 import { EnvironmentSecretKeys } from '../dotenv/constants';
 import { EnvironmentStage } from '../dotenv/types';
 import ErrorHandler from '../../../utils/errors/errorHandler';
+import { SECURITY_CONSTANTS } from '../../../cryptography/constants/security.constant';
 
 export class EnvironmentUtils {
   /**
@@ -36,14 +36,7 @@ export class EnvironmentUtils {
   ): Promise<T> {
     try {
       const value = getValue();
-      this.validateEnvironmentVariable(String(value), variableName); // Validate string form
-
-      const shouldSanitize = EnvironmentDetector.isCI();
-
-      if (typeof value === 'string') {
-        return shouldSanitize ? (SanitizationConfig.sanitizeString(value) as T) : value;
-      }
-
+      this.validateEnvironmentVariable(value, variableName);
       return value;
     } catch (error) {
       ErrorHandler.captureError(error, methodName, errorMessage);
@@ -61,8 +54,8 @@ export class EnvironmentUtils {
   ): Promise<Credentials> {
     try {
       return {
-        username: await CryptoService.decrypt(username, secretKey),
-        password: await CryptoService.decrypt(password, secretKey),
+        username: await this.resolveCredentialValue(username, secretKey),
+        password: await this.resolveCredentialValue(password, secretKey),
       };
     } catch (error) {
       ErrorHandler.captureError(error, 'decryptCredentials', 'Failed to decrypt credentials');
@@ -85,8 +78,22 @@ export class EnvironmentUtils {
   /**
    * Validates that an environment variable is not empty
    */
-  public static validateEnvironmentVariable(value: string, variableName: string): void {
-    if (!value || value.trim() === '') {
+  public static validateEnvironmentVariable(value: unknown, variableName: string): void {
+    if (value === undefined || value === null) {
+      ErrorHandler.logAndThrow(
+        `Environment variable ${variableName} is not set or is empty`,
+        'FetchLocalEnvironmentVariables',
+      );
+    }
+
+    if (typeof value === 'string' && value.trim() === '') {
+      ErrorHandler.logAndThrow(
+        `Environment variable ${variableName} is not set or is empty`,
+        'FetchLocalEnvironmentVariables',
+      );
+    }
+
+    if (typeof value === 'number' && !Number.isFinite(value)) {
       ErrorHandler.logAndThrow(
         `Environment variable ${variableName} is not set or is empty`,
         'FetchLocalEnvironmentVariables',
@@ -119,5 +126,16 @@ export class EnvironmentUtils {
           'getSecretKeyForEnvironment',
         );
     }
+  }
+
+  private static async resolveCredentialValue(
+    value: string,
+    secretKeyVariable: string,
+  ): Promise<string> {
+    if (value.startsWith(SECURITY_CONSTANTS.FORMAT.PREFIX)) {
+      return CryptoService.decrypt(value, secretKeyVariable);
+    }
+
+    return value;
   }
 }

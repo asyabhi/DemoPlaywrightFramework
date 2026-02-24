@@ -6,7 +6,7 @@ Use this checklist when using this framework for a new project.
 
 - [ ] Copy `envs/.env.uat.template` to `envs/.env.uat` (and `.env.dev` if needed).
 - [ ] Set `PORTAL_BASE_URL` to your application URL.
-- [ ] Set `PORTAL_USERNAME` and `PORTAL_PASSWORD` (or use encryption flow).
+- [ ] Set `PORTAL_USERNAME` and `PORTAL_PASSWORD` (plaintext or encrypted `ENC2:` values).
 - [ ] Set `API_BASE_URL` if running API tests.
 
 ## 2. Login & post-login
@@ -33,7 +33,8 @@ Use this checklist when using this framework for a new project.
 
 - [ ] Add new page objects under `src/ui/pages/` extending `BasePage`.
 - [ ] Register new pages in `fixtures/configurator.fixture.ts`.
-- [ ] Add specs under `tests/ui/`, `tests/api/`, etc.
+- [ ] Add specs under `tests/ui/`, `tests/api/`, `tests/db`, etc.
+- [ ] Replace the skipped placeholder specs in `tests/api/` and `tests/db/` with real tests.
 
 After setup, run:
 

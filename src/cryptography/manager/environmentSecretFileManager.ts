@@ -103,13 +103,25 @@ export class EnvironmentSecretFileManager {
    */
   public async getOrCreateBaseEnvFileContent(filePath: string): Promise<string> {
     try {
-      const fileExists = await FileSystemManager.createFile(filePath);
+      const fileExistedBeforeCreate = await FileSystemManager.doesFileExist(filePath);
+      const createResult = await FileSystemManager.createFile(filePath);
 
-      if (!fileExists) {
+      if (!createResult.success) {
+        throw (
+          createResult.error ?? new Error(`Failed to create base environment file: ${filePath}`)
+        );
+      }
+
+      if (!fileExistedBeforeCreate) {
         logger.warn(
           `Base environment file not found at "${filePath}". A new empty file will be created.`,
         );
-        await FileSystemManager.writeFile(filePath, '', 'Created empty environment file');
+        await FileSystemManager.writeFile(
+          filePath,
+          '',
+          'Created empty environment file',
+          FileEncoding.UTF8,
+        );
         return '';
       }
 

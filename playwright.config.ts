@@ -9,13 +9,37 @@ import * as path from 'path';
 
 const isCI = EnvironmentDetector.isCI();
 const shouldSkipBrowserInit = BrowserInitFlag.shouldSkipBrowserInit();
+const isShardingEnabled = EnvironmentDetector.isShardingEnabled();
+
+const parsePositiveInteger = (value: string | undefined, fallback?: number): number => {
+  const parsedValue = Number.parseInt(value ?? '', 10);
+  if (Number.isFinite(parsedValue) && parsedValue > 0) {
+    return parsedValue;
+  }
+
+  if (fallback !== undefined) {
+    return fallback;
+  }
+
+  throw new Error(`Expected a positive integer value but received: ${value ?? 'undefined'}`);
+};
+
+const shardIndex = parsePositiveInteger(process.env.SHARD_INDEX, 1);
+const shardTotal = parsePositiveInteger(process.env.SHARD_TOTAL, 1);
+const workerCount =
+  process.env.PLAYWRIGHT_WORKERS !== undefined
+    ? parsePositiveInteger(process.env.PLAYWRIGHT_WORKERS)
+    : isCI
+      ? Math.max(1, os.cpus().length - 1)
+      : Math.max(1, Math.floor(os.cpus().length / 2));
+
 const authFileName = EnvironmentDetector.isCI()
   ? AuthStorageConstants.CI_AUTH_FILE
   : AuthStorageConstants.LOCAL_AUTH_FILE;
 const storageStatePath = path.join(AuthStorageConstants.DIRECTORY, authFileName);
 
 const reportConfig: OrtoniReportConfig = {
-  open: isCI ? 'never' : 'always',
+  open: process.env.ORTONI_OPEN === 'always' && !isCI ? 'always' : 'never',
   folderPath: 'ortoni-report',
   filename: 'index.html',
   logo: undefined,
@@ -58,33 +82,23 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!isCI,
   /* Retry on CI only */
-  shard: EnvironmentDetector.isShardingEnabled()
+  shard: isShardingEnabled
     ? {
-        current: parseInt(process.env.SHARD_INDEX || '1'),
-        total: parseInt(process.env.SHARD_TOTAL || '1'),
+        current: shardIndex,
+        total: shardTotal,
       }
     : undefined,
 
-  workers: EnvironmentDetector.isShardingEnabled()
-    ? Math.max(1, Math.floor(os.cpus().length / parseInt(process.env.SHARD_TOTAL || '1')))
-    : Math.max(1, Math.floor(os.cpus().length / 2)),
+  workers: workerCount,
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: isCI
-    ? [
-        ['html', { open: 'never' }],
-        ['junit', { outputFile: 'results.xml' }],
-        ['ortoni-report', reportConfig],
-        ['dot'],
-        ['playwright-trx-reporter', { outputFile: 'results.trx' }],
-      ]
-    : [
-        ['html', { open: 'never' }],
-        ['junit', { outputFile: 'results.xml' }],
-        ['ortoni-report', reportConfig],
-        ['dot'],
-        ['playwright-trx-reporter', { outputFile: 'results.trx' }],
-      ],
+  reporter: [
+    ['html', { open: 'never' }],
+    ['junit', { outputFile: 'results.xml' }],
+    ['ortoni-report', reportConfig],
+    ['dot'],
+    ['playwright-trx-reporter', { outputFile: 'results.trx' }],
+  ],
   grep:
     typeof process.env.PLAYWRIGHT_GREP === 'string'
       ? new RegExp(process.env.PLAYWRIGHT_GREP)

@@ -68,6 +68,7 @@ The template supports encrypting sensitive env values (e.g. with Argon2). To use
 
 - Configure your encryption flow (see `tests/encryption` if present).
 - Run the encryption test to generate/update encrypted values and store the secret key in `.env` as required by your setup.
+- Plaintext values are also supported; decryption is applied only when a value starts with `ENC2:`.
 
 ---
 
@@ -88,7 +89,8 @@ The template supports encrypting sensitive env values (e.g. with Argon2). To use
 4. **Add page objects and tests**
    - Add new page classes under `src/ui/pages/` extending `BasePage`.
    - Register them in `fixtures/configurator.fixture.ts` (or your main fixture).
-   - Add specs under `tests/ui/`, `tests/api/`, etc.
+   - Add specs under `tests/ui/`, `tests/api/`, `tests/db`, etc.
+   - API and DB suites include skipped placeholder specs by default; replace them with real tests.
 
 5. **CI**
    - Update `azure-pipelines.yml` (or your CI config): variable group name, pipeline name, and notification emails.
@@ -104,6 +106,8 @@ The template supports encrypting sensitive env values (e.g. with Argon2). To use
 | `npm run test:ui:uat`  | UI tests (UAT env)             |
 | `npm run test:api:dev` | API tests (dev)                |
 | `npm run test:api:uat` | API tests (UAT)                |
+| `npm run test:db:dev`  | DB tests (dev)                 |
+| `npm run test:db:uat`  | DB tests (UAT)                 |
 | `npm run test:all:uat` | All tests (UAT)                |
 | `npm run test:failed:uat` | Re-run last failed (UAT)   |
 | `npm run ui`           | Playwright UI mode             |

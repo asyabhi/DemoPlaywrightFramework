@@ -9,8 +9,25 @@
     "successCreate": "successfully created",
     "successUpdate": "successfully updated"
   },
+  "performanceThresholds": {
+    "apiResponseMs": 2000,
+    "pageLoadMs": 5000
+  },
+  "tableHeaders": {
+    "superBusinessUnits": [],
+    "businessUnits": [],
+    "branches": [],
+    "vendorCodes": [],
+    "users": [],
+    "roles": []
+  },
   "superBusinessUnits": { "valid": [], "invalid": [], "duplicate": [] },
-  "businessUnits": { "valid": [], "invalid": [], "regions": ["Default"], "externalAffiliations": ["Default"] },
+  "businessUnits": {
+    "valid": [],
+    "invalid": [],
+    "regions": ["Default"],
+    "externalAffiliations": ["Default"]
+  },
   "branches": { "valid": [], "invalid": [], "regions": ["Default"], "bankNames": ["Default"] },
   "vendorCodes": { "valid": [], "invalid": [], "bankNames": ["Default"] },
   "users": { "valid": [], "invalid": [], "products": ["Default"] },
